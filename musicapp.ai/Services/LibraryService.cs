@@ -91,7 +91,7 @@ internal sealed class LibraryService
     public IEnumerable<TrackSearchResult?> SearchTracksByTitle(string title, int limitResults = 5)
     {
         const double confidenceScore = 85d;
-        var query = title.Trim().ToLowerInvariant();
+        string query = title.Trim().ToLowerInvariant();
 
         var foundTracks = _cache.GetAllTracks()
             .Select(t => new
@@ -107,6 +107,39 @@ internal sealed class LibraryService
                 Album = x.Track.Album,
                 Artist = x.Track.Artist,
                 ConfidenceScore = x.Score,
+                Duration = $"{x.Track.Duration.Minutes:D2}:{x.Track.Duration.Seconds:D2}",
+                Title = x.Track.Title
+            })
+            .ToList();
+        
+        return foundTracks;
+
+    }
+
+    public IEnumerable<TrackSearchResult?> SearchTracksByArtistAlbum(string? artist, string? album, int limitResults = 20)
+    {
+        const double confidenceScore = 85d;
+        var artistQuery = string.IsNullOrWhiteSpace(artist) ? string.Empty : artist.Trim().ToLowerInvariant();
+        var albumQuery = string.IsNullOrWhiteSpace(album) ? string.Empty : album.Trim().ToLowerInvariant();
+        
+
+        var foundTracks = _cache.GetAllTracks()
+            .Select(t => new
+            {
+                Track = t, 
+                ArtistScore = Fuzz.PartialRatio(t.Artist?.ToLowerInvariant(), artistQuery),
+                AlbumScore = Fuzz.PartialRatio(t.Album?.ToLowerInvariant(), albumQuery)
+            })
+            .Where(x => x.ArtistScore >= confidenceScore || x.AlbumScore >= confidenceScore)
+            .OrderByDescending(x => x.ArtistScore)
+            .ThenBy(x => x.AlbumScore)
+            .Take(limitResults)
+            .Select(x => new TrackSearchResult
+            {
+                Id = x.Track.Id,
+                Album = x.Track.Album,
+                Artist = x.Track.Artist,
+                ConfidenceScore = new[] {x.ArtistScore, x.AlbumScore}.Max(),
                 Duration = $"{x.Track.Duration.Minutes:D2}:{x.Track.Duration.Seconds:D2}",
                 Title = x.Track.Title
             })

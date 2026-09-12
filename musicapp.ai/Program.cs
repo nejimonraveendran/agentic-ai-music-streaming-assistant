@@ -54,23 +54,28 @@ builder.Services.AddSingleton<ChannelStore>();
 builder.Services.AddScoped<ConversationContext>();
 builder.Services.AddScoped<LibraryService>();
 builder.Services.AddScoped<MusicTools>();
-builder.Services.AddScoped((Func<IServiceProvider, ChatClientAgent>)(sp =>
+builder.Services.AddScoped(sp =>
 {
     var chatClient = new Client(vertexAI: false, apiKey: geminiApiKey).AsIChatClient(geminiAiModel);
     var musicTools = sp.GetRequiredService<MusicTools>();
     
-    return new ChatClientAgent(
+    var agent = new ChatClientAgent(
         chatClient,
         name: AgentName,
         instructions: agentInstructions,
         tools:
         [
             AIFunctionFactory.Create(musicTools.SearchCatalogByTitle),
+            AIFunctionFactory.Create(musicTools.SearchCatalogByTitleArtistAlbum),
             AIFunctionFactory.Create(musicTools.PlayTrackByIdAsync),
             AIFunctionFactory.Create(musicTools.GetTrackCount),
             AIFunctionFactory.Create(musicTools.StopOrPauseCurrentPlaybackAsync),
         ]);
-}));
+
+    return agent.AddLoggingMiddleware();
+});
+
+
 
                                                                                               
 var app = builder.Build();
@@ -82,7 +87,7 @@ ScanLocalMusicLibrary(app);
 
 app.MapPost("/api/music/chat",
     async (ChatRequest request, 
-            [FromServices] ChatClientAgent agent, 
+            [FromServices] AIAgent agent, 
             [FromServices] ConversationStore conversations, 
             ConversationContext conversationContext) =>
     {
@@ -182,11 +187,11 @@ app.MapPost("/api/music/chat/sse/test/{conversationId}", async (string conversat
 });
 
 
-app.MapPost("/api/music/search", async (LibraryService libraryService, [FromBody] SearchRequest request) =>
-{
-    var results = libraryService.SearchTracksByTitle(request.Title);
-    return Results.Ok(results);
-});
+// app.MapPost("/api/music/search", async (LibraryService libraryService, [FromBody] SearchRequest request) =>
+// {
+//     var results = libraryService.SearchTracksByTitleArtistAlb(request.Title, request.Artist, request.Album);
+//     return Results.Ok(results);
+// });
 
 
 app.Run();

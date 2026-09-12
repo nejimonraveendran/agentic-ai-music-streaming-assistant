@@ -5,7 +5,7 @@ sealed class ConversationStore
 {
     private readonly ConcurrentDictionary<string, AgentSession> _sessions = new();
 
-    public async Task<AgentSession> GetOrCreateAsync(string conversationId, ChatClientAgent agent)
+    public async Task<AgentSession> GetOrCreateAsync(string conversationId, AIAgent agent)
     {
         if (_sessions.TryGetValue(conversationId, out var session))
             return session;

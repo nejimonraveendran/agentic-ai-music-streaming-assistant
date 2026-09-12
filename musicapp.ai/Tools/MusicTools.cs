@@ -14,6 +14,17 @@ internal sealed class MusicTools(LibraryService _libraryService,
         return _libraryService.SearchTracksByTitle(title);
     }
 
+    [Description("Search the music catalog by artist, album.")]
+    public IEnumerable<TrackSearchResult?> SearchCatalogByTitleArtistAlbum(
+        [Description("Name of the artist (optional)")] string? artist,
+        [Description("Name of the album (optional)")] string? album
+        )
+    {
+        Console.WriteLine($"SearchCatalogByTitleArtistAlbum invoked for artist: {artist}, album: {album}");
+
+        return _libraryService.SearchTracksByArtistAlbum(artist, album);
+    }
+
 
     [Description("Play music track by track Id.")]
     public async Task<PlayTrackResult> PlayTrackByIdAsync([Description("Track Id")] int trackId)

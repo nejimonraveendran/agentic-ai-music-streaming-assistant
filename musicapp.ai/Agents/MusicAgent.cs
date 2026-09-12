@@ -2,9 +2,9 @@ using Microsoft.Agents.AI;
 
 internal sealed class MusicAgent
 {
-    private readonly ChatClientAgent _agent;
+    private readonly AIAgent _agent;
 
-    public MusicAgent(ChatClientAgent agent)
+    public MusicAgent(AIAgent agent)
     {
         _agent = agent;
     }

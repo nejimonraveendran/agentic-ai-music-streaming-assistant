@@ -3,7 +3,9 @@ record ChatRequest(
     string Message);
 
 record SearchRequest(
-    string Title
+    string Title,
+    string Artist,
+    string Album
 );
 
 record ChatEventInfo(
