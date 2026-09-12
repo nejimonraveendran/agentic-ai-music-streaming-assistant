@@ -38,5 +38,6 @@ MusicChat.AI is a minimal AI-powered prototype application demonstrating music s
 - Demonstration of authentication and authorization
 - More guardrails
 - More tools
+- MCP integration
 
 
