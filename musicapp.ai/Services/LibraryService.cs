@@ -1,3 +1,4 @@
+using System.Text.Json;
 using musicapp.ai.Infrastructure;
 using Raffinert.FuzzySharp;
 
@@ -20,6 +21,31 @@ internal sealed class LibraryService
             return;
         }
 
+        var cacheFile = Path.Combine(_libraryOptions.LibraryPath, ".music-chat-library-cache.json");
+
+        // Load previously generated metadata
+        if (File.Exists(cacheFile))
+        {
+            try
+            {
+                var json = File.ReadAllText(cacheFile);
+                var tracks = JsonSerializer.Deserialize<List<Track>>(json);
+
+                if (tracks != null)
+                {
+                    foreach (var track in tracks)
+                        _cache.AddTrack(track);
+                }
+
+                return;
+            }
+            catch
+            {
+                // Cache is invalid/corrupt.
+                // Fall through and rebuild it.
+            }
+        }
+
         var filePaths = Directory.EnumerateFiles(_libraryOptions.LibraryPath, "*.*", SearchOption.AllDirectories)
                 .Where(f => _libraryOptions.SupportedExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()));
 
@@ -40,6 +66,26 @@ internal sealed class LibraryService
                 //ignore failed files
             }
         }
+    
+        // Persist metadata so the audio files don't need
+        // to be parsed again next time.
+        try
+        {
+            var tracks = _cache.GetAllTracks();
+
+            var json = JsonSerializer.Serialize(tracks,
+                new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+            File.WriteAllText(cacheFile, json);
+        }
+        catch
+        {
+            // Ignore cache write failure
+        }
+
     }
 
     public IEnumerable<TrackSearchResult?> SearchTracksByTitle(string title, int limitResults = 5)
@@ -90,6 +136,11 @@ internal sealed class LibraryService
     public Track? GetTrackById(int id)
     {
         return _cache.GetAllTracks().FirstOrDefault(t => t.Id == id);
+    }
+
+    public int GetTrackCount()
+    {
+        return _cache.GetAllTracks().Max(t => t.Id);
     }
 }
 

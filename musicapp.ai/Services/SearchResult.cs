@@ -1,4 +1,4 @@
-internal class TrackSearchResult 
+internal sealed class TrackSearchResult 
 {
     public required int Id { get; set; }
     public required string Title { get; set; }

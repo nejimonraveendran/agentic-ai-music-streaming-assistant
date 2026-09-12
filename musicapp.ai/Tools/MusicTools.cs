@@ -1,45 +1,68 @@
 using System.ComponentModel;
+using System.Text.Json;
 using musicapp.ai.Infrastructure;
 
-internal sealed class MusicTools(LibraryService _libraryService)
+internal sealed class MusicTools(LibraryService _libraryService, 
+                                    ChannelStore _channelStore, 
+                                    ConversationContext _conversationContext)
 {
-
-
-    // [Description("Play a music track.")]
-    // public static string PlayMusicTrack(
-    //     [Description("The exact title of the track to play.")]
-    //     string trackTitle)
-    // {
-    //     Console.WriteLine($"PlayMusicTrack: {trackTitle}");
-
-    //     return $"You requested to play the track {trackTitle}";
-    // }
-
-
     [Description("Search the music catalog by title.")]
-    public IEnumerable<TrackSearchResult?> SearchCatalogByTitle(string title)
+    public IEnumerable<TrackSearchResult?> SearchCatalogByTitle([Description("Title of the track")] string title)
     {
-        Console.WriteLine($"SearchCatalogByTitle invoked");
+        Console.WriteLine($"SearchCatalogByTitle invoked for title: {title}");
 
         return _libraryService.SearchTracksByTitle(title);
-   }
+    }
+
+
+    [Description("Play music track by track Id.")]
+    public async Task<PlayTrackResult> PlayTrackByIdAsync([Description("Track Id")] int trackId)
+    {
+        Console.WriteLine($"PlayTrackById invoked by track Id: {trackId}, ConverationId: {_conversationContext.ConversationId}");
+
+        if(_conversationContext == null || string.IsNullOrEmpty(_conversationContext.ConversationId))
+            return new PlayTrackResult{ IsSuccess = false, Message = "Invalid conversastion context"};
+
+        var track = _libraryService.GetTrackById(trackId);
+
+        if(track == null)
+        {
+            return new PlayTrackResult{ IsSuccess = false, Message = "Track not found"};
+        }
+
+        var myConversationChannel = _channelStore.GetConversation(_conversationContext.ConversationId);
+        if(myConversationChannel == null || myConversationChannel == default)
+        {
+            return new PlayTrackResult{ IsSuccess = false, Message = "No valid conversation channel found"};
+        }
+
+        await myConversationChannel.Writer.WriteAsync(JsonSerializer.Serialize(new ChatEventInfo(EventType: ChatEventType.Play, ConversationId: _conversationContext.ConversationId, Track: track)));
+        
+        return new PlayTrackResult{ IsSuccess = true, Message = $"Playing track {track.Title}"};
+    }
+
+
+    [Description("Get tracks count.")]
+    public int GetTrackCount()
+    {
+        Console.WriteLine($"GetTrackCount invoked, ConverationId: {_conversationContext.ConversationId}");
+        return _libraryService.GetTrackCount();
+    }
+
+    [Description("Stop or pause playback current playback if applicable.")]
+    public async Task StopOrPauseCurrentPlaybackAsync()
+    {
+        Console.WriteLine($"StopOrPauseCurrentPlayback invoked, ConverationId: {_conversationContext.ConversationId}");
+        
+        if(_conversationContext == null || string.IsNullOrEmpty(_conversationContext.ConversationId)) 
+            return;
+        
+        var myConversationChannel = _channelStore.GetConversation(_conversationContext.ConversationId);
+        if(myConversationChannel == null || myConversationChannel == default)
+            return;
+        
+        await myConversationChannel.Writer.WriteAsync(JsonSerializer.Serialize(new ChatEventInfo(EventType: ChatEventType.StopOrPause, ConversationId: _conversationContext.ConversationId, Track: null)));
+
+    }
     
-
-
-    // [Description("Get the music catalog.")]
-    // public static List<string> GetMusicCatalog(IMusicCache musicCache)
-    // {
-    //     Console.WriteLine($"GetMusicCatalog invoked");
-
-    //     var trackFiles = musicCache.GetAllTracks();
-
-    //     return
-    //     [
-    //         "Gange thudiyil.mp3",
-    //         "Kunjilam Chundil Punchiri.wav",
-    //         "Maranno Nee Nilaavil (Male).mp3",
-    //         "Chaithranilaavinte.mp3",
-    //         "Then nilaavilen.mp3"
-    //     ];
-    // }
 }
