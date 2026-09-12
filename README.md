@@ -1,4 +1,7 @@
 # MusicChat.AI - Music Playback AI Agent
+
+▶ [YouTube Demo](https://www.youtube.com/watch?v=sjC7s7oQeEw)
+
 MusicChat.AI is a minimal AI-powered prototype application demonstrating music streaming using natural language (a chat interface). It is built using [Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/overview/?pivots=programming-language-csharp) and C#.NET. The prototype demonstrates several AI orchestration as well as software engineering concepts:
 - **AI Agents and LLM integration:** ([Google Gemini 3.5 Flash Lite](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite) in this implementation)
 - **Agent context and session handling:** LLMs are inherently stateless, so in an interactive chat sesssion, maintaining the context is important.  The example demonstrates MAF AgentSession.
